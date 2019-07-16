@@ -41,16 +41,18 @@ fish_length <- data.frame(FISH.SIZE = c("YOY", "0-10", "10-50", "50-100", ">100"
 fish <- left_join(fish, fish_length)
 
 #note that counts are per 80 meters
+
 fish_sum <- fish %>%
   group_by(YEAR, SITE, TRANSECT, SPECIES, actual_size, ALPHA, BETA) %>%
-  summarise(density = sum(COUNT)) 
+  summarise(count = sum(COUNT)) 
+
+fish_sum$density <- fish_sum$count[]/80
 
 fish_sum <- fish_sum %>%
-  mutate(fish_mass = ALPHA * (actual_size^BETA))
+  mutate(ind.fish_mass = ALPHA * (actual_size^BETA))
 
-site_sum <- fish_sum %>%
-  group_by(YEAR, SITE, SPECIES) %>%
-  summarise(mean_biomass = mean(fish_mass))
+fish_sum <- fish_sum %>%
+  mutate(fish_mass = density * ind.fish_mass)
 
 #quadrat data wrangling
 #exclude juv. for now - not necessarily relevant for fish habitat
@@ -94,12 +96,13 @@ data_complete <- left_join(data_complete, mean_depths)
 
 
 #filter fish of interest for plotting if needed
-foi <- c("Tautoga onitis", "Tautogolabrus adspersus", "Stenotomus chrysops")
+foi <- c("Tautogolabrus adspersus")
 
 ggplot(data = data_complete %>%filter(mean_biomass<200), 
-       mapping = aes(x = mean_kelp_density, y = mean_biomass)) +
+       mapping = aes(x = mean_kelp_density, y = log(mean_biomass), color = SPECIES)) +
   geom_point() 
   #geom_line()
+  #facet_wrap(~YEAR)
 
 ##################################
 #how variable is kelp density?
@@ -115,6 +118,16 @@ ggplot(data = quads_var, mapping = aes(x = tran_id, y = count)) +
   facet_wrap(~YEAR)
 
 
+##########
+#Day 2
+#bring in quadrat data
+#wide format at transect level
+
+str(quads)
+
+quads_wide <- quads %>%
+  select(-)
+quads_wide <- spread(quads, key = SPECIES, value = COUNT)
 
 
 
